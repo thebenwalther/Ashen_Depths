@@ -31,9 +31,11 @@ class Enemy:
             self.skip_next_turn = False
             return f"{self.name} is stunned and skips its turn!"
 
-        # Hand over the damage computation to the player.
+        # Deal damage but DON't announce a result we can't confirm. The shield lives on the player and the enemy can't see it, so attack() reports
+        # the ATTEMPT ("lunges at you") and player.take_damage() reports the OUTCOME ("shield absorbs it" vs "you take N damage"). The Game prints both
+        # in sequence.
         player.take_damage(self.attack_damage)
-        return f"{self.name} attacks you for [self.attack_damage} damage!"
+        return f"{self.name} lunges at you!"
 
     def is_alive(self):
         return self.health > 0
