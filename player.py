@@ -58,17 +58,22 @@ class Player:
         lines = ["Inventory:"] + [f" - {item.display()}" for item in self.inventory]
         return "\n".join(lines)
 
-
     def use_item(self, item_name, target=None):
         item = self._find_item(item_name)
         if item is None:
-            return f"You don't have an {item_name}."
+            return (f"You don't have an {item_name}.", False)
 
         if not item.is_usable():
             # Catch the Amulet "special" case
             if item.item_type == "special":
-                return f"The {item.name} hums with power, but there's nothing to use it on."
-            return f"The {item.name} is used up."
+                return (
+                    f"The {item.name} hums with power, but there's nothing to use it on.",
+                    False,
+                )
+            return (f"The {item.name} is used up.", False)
+
+        if item.item_type in ("damage", "disable") and target is None:
+            return (f"There's nothing to use the {item.name} on.", False)
 
         if item.item_type == "damage":
             target.take_damage(item.effect_value)
@@ -87,15 +92,13 @@ class Player:
             message = f"You raise the {item.name}. The next attack with be blocked."
 
         else:
-            return f"You can't use the {item.name}"
-
+            return (f"You can't use the {item.name}", False)
 
         item.consume()
         if not item.is_usable():
             self.inventory.remove(item)
 
-        return message
-
+        return (message, True)
 
     def move_to_room(self, room):
         self.current_room = room
