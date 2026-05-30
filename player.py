@@ -26,3 +26,81 @@ class Player:
             return "Your shield absorbs the blow!"
         self.health = max(0, self.health - amount)
         return f"You take {amount} damage. (HP: {self.health}/{self.max_health})"
+
+    def heal(self, amount):
+        before = self.health
+        self.health = min(self.max_health, self.health + amount)
+        return self.health - before
+
+    def is_alive(self):
+        return self.health > 0
+
+    def add_item(self, item):
+        self.inventory.append(item)
+
+    def remove_item(self, item_name):
+        # Remove first item matching the name
+        item = self._find_item(item_name)
+        if item is not None:
+            self.inventory.remove(item)
+        return item
+
+    def _find_item(self, item_name):
+        # First name match. Case-sensitive
+        for item in self.inventory:
+            if item_name.lower() == item_name.lower():
+                return item
+        return None
+
+    def check_inventory(self):
+        if not self.inventory:
+            return "Your inventory is empty."
+        lines = ["Inventory:"] + [f" - {item.display()}" for item in self.inventory]
+        return "\n".join(lines)
+
+
+    def use_item(self, item_name, target=None):
+        item = self._find_item(item_name)
+        if item is None:
+            return f"You don't have an {item_name}."
+
+        if not item.is_usable():
+            # Catch the Amulet "special" case
+            if item.item_type == "special":
+                return f"The {item.name} hums with power, but there's nothing to use it on."
+            return f"The {item.name} is used up."
+
+        if item.item_type == "damage":
+            target.take_damage(item.effect_value)
+            message = f"You strike {target.name} with {item.name} for {item.effect_value} damage!"
+
+        elif item.item_type == "disable":
+            target.skip_next_turn = True
+            message = f"You use {item.name} - {target.name} will skip its next turn!"
+
+        elif item.item_type == "heal":
+            healed = self.heal(item.effect_value)
+            message = f"You use {item.name} and recover {healed} HP."
+
+        elif item.item_type == "shield":
+            self.is_shielded = True
+            message = f"You raise the {item.name}. The next attack with be blocked."
+
+        else:
+            return f"You can't use the {item.name}"
+
+
+        item.consume()
+        if not item.is_usable():
+            self.inventory.remove(item)
+
+        return message
+
+
+    def move_to_room(self, room):
+        self.current_room = room
+
+    def display_stats(self):
+        location = self.current_room.name if self.current_room else "Unknown"
+        shield = " [Shielded]" if self.is_shielded else ""
+        return f"{self.name} - HP: {self.health}/{self.max_health} - {location}{shield}"
